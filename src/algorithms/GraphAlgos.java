@@ -14,17 +14,26 @@ import graph.IGraph;
 import graph.Vertex;
 
 public class GraphAlgos {
+	enum Types {
+	    Person,
+	    Place,
+	    City
+	}
+	
 	IGraph _graph;
 	boolean _pop = true;
 	private ArrayList<Integer> _cutV;
+	private ArrayList<Vertex> _failed;
+	private HashMap<Vertex, Integer> _dist; 
 	private int _source = -1;
     private int _dest = -1;
-    private ArrayList<Integer> cutV;
 	
 	
 	public GraphAlgos(IGraph graph)
 	{
 		_graph = graph;
+		_cutV = new ArrayList<>();
+		_failed = new ArrayList<>();
 	}
     /**
      *
@@ -97,7 +106,7 @@ public class GraphAlgos {
             int key = allNodes.next();
             if (ap.get(key) == 1) {
                 sbBuilder.append(key + " is a cut vertex");
-                cutV.add(key);
+                _cutV.add(key);
                 cutExist = true;
             }
         }
@@ -175,10 +184,11 @@ public class GraphAlgos {
         return sb.toString();
     }
 
-    public void NearestNeighbor() {
+    public String NearestNeighbor() {
         reset();
+        StringBuilder sb = new StringBuilder();
         long startTime = System.currentTimeMillis();
-        Stack<Vertex> stack = new Stack();
+        Stack<Vertex> stack = new Stack<>();
         // start with a random Node
         int random = (int) (Math.random() * _graph.GetVertices().size());
         Vertex startNode = _graph.GetVertices().get(random);
@@ -191,7 +201,9 @@ public class GraphAlgos {
             }
         }
         long endTime = System.currentTimeMillis();
-        GraphifyGUI.lblTimeTaken.setText(String.valueOf((endTime - startTime))+" ms");
+        
+        sb.append(String.valueOf((endTime - startTime))+" ms");
+        return sb.toString();
     }
     
     public void startGANN(Population pop){
@@ -353,7 +365,7 @@ public class GraphAlgos {
                 }
             }
             glowMap = (HashMap<Vertex, Vertex>) tempShortPath.clone();
-            Gui.graph();
+            //Gui.graph();
             disjointPaths.put(pathvalue, tempShortPath);
             pathvalue++;
         }
@@ -383,9 +395,9 @@ public class GraphAlgos {
     //dijsktra
     public void execute(Vertex source) {
         // get _graph.GetVertices() and edges from GUI
-        sNodes = new HashSet<>(); // settled _graph.GetVertices() will be placed in this setShortestPath
-        uSNodes = new HashSet<>(); // unsettled _graph.GetVertices() will be placed in this setShortestPath
-        dist = new HashMap<>(); // weight to get to node
+    	HashSet<Vertex> sNodes = new HashSet<>(); // settled _graph.GetVertices() will be placed in this setShortestPath
+    	HashSet<Vertex> uSNodes = new HashSet<>(); // unsettled _graph.GetVertices() will be placed in this setShortestPath
+    	HashMap<Vertex, Integer> dist = new HashMap<>(); // weight to get to node
         reset();
         dist.put(source, 0); // first setShortestPath source to 0
         uSNodes.add(source); // add source to unsettled _graph.GetVertices()
@@ -393,18 +405,18 @@ public class GraphAlgos {
             Vertex v = getMin(uSNodes); // we use min node from unsettled _graph.GetVertices() each time to process
             sNodes.add(v); // add it to settled _graph.GetVertices()
             uSNodes.remove(v); // remove it
-            findMinDist(v); // find min distance
+            findMinDist(v, sNodes, uSNodes); // find min distance
         }
     }
 
     //settled _graph.GetVertices()
-    public boolean isSettled(Vertex v) {
+    public boolean isSettled(Vertex v, HashSet<Vertex> sNodes) {
         return sNodes.contains(v);
     }
 
     //returns weight
     public int getWeight(Vertex s, Vertex d) {
-        for (Edge e : edges) {
+        for (Edge e : _graph.GetEdges().values()) {
             if (e.getSource() == s && e.getDest() == d || e.getSource() == d && e.getDest() == s) {
                 return e.getWeight();
             }
@@ -413,15 +425,15 @@ public class GraphAlgos {
     }
 
     //getNeighbors
-    public List<Vertex> getNeighbors(Vertex v) {
+    public List<Vertex> getNeighbors(Vertex v, HashSet<Vertex> sNodes) {
         List<Vertex> neighbors = new ArrayList<>();
         HashSet<Edge> n = _graph.GetVertices().get(v.getId()).eList();
         Iterator<Edge> neighb = n.iterator();
         while (neighb.hasNext()) {
-            IEdge t = neighb.next();
-            if (!failed.contains(t.getDest())) {
+            Edge t = neighb.next();
+            if (!_failed.contains(t.getDest())) {
                 Vertex next = getConn(v, t);
-                if (!isSettled(next)) {
+                if (!isSettled(next, sNodes)) {
                     neighbors.add(next);
                 }
             }
@@ -430,13 +442,13 @@ public class GraphAlgos {
     }
 
     // find min distance
-    public void findMinDist(Vertex v) {
-        List<Vertex> neighbors = getNeighbors(v);
+    public void findMinDist(Vertex v, HashSet<Vertex> sNodes, HashSet<Vertex> uSNodes) {
+        List<Vertex> neighbors = getNeighbors(v, sNodes);
         neighbors.stream().forEach((Vertex t) -> {
             int combWeight = GSD(v) + getWeight(v, t);
             /*getWeight*/ if (GSD(t) > combWeight) {
-                dist.put(t, GSD(v) + getWeight(v, t));
-                t.parent = v;
+                _dist.put(t, GSD(v) + getWeight(v, t));
+                t.SetParent(v);
                 uSNodes.add(t);
             }
         });
@@ -455,7 +467,7 @@ public class GraphAlgos {
     }
 
     public int GSD(Vertex d) {
-        Integer distance = dist.get(d);
+        Integer distance = _dist.get(d);
         if (distance == null) {
             return Integer.MAX_VALUE;
         } else {
@@ -465,21 +477,22 @@ public class GraphAlgos {
 
     public ArrayList BfsSuggeest(Vertex source, int num) {
         reset();
-        suggestQueue = new LinkedList<>(); // FIFO
+        StringBuilder sb = new StringBuilder();
+        Queue<Vertex> suggestQueue = new LinkedList<>(); // FIFO
         source.setVisited(true); // marked as visited
         suggestQueue.add(source); // put into queue
-        source.parent = source; // setShortestPath parent
-        conn = new ArrayList<>();
+        source.SetParent(source);
+        ArrayList<Integer> conn = new ArrayList<>();
         while (!suggestQueue.isEmpty()) { // source
             Vertex current = suggestQueue.poll(); // remove first 
             Iterator<Edge> currentList = current.eList().iterator();
             while (currentList.hasNext()) {
-                IEdge t = currentList.next();
+                Edge t = currentList.next();
                 Vertex next = getConn(current, t);
                 if (next.visited() == false) {
                     next.setVisited(true);
                     suggestQueue.add(next);
-                    next.parent = current;
+                    next.SetParent(current);
                     if (!source.eList().contains(t)) {
                         switch (num) {
                             case 0:
@@ -533,7 +546,10 @@ public class GraphAlgos {
     }
 
     public void shortestPath(int v, int e) {
-        Capacity = 0;
+    	StringBuilder sb = new StringBuilder();
+    	HashMap<Vertex, Vertex> setShortestPath = new HashMap<>();
+    	HashMap<Vertex, Vertex> glowMap = new HashMap<>();
+        int capacity = 0;
         if (e == v) {
             sb.append(v + "-->" + v);
             return;
@@ -544,30 +560,27 @@ public class GraphAlgos {
             }
             if (_graph.GetVertices().get(i).getParent().getId() != -1) {
                 setShortestPath.put(_graph.GetVertices().get(i).getParent(), _graph.GetVertices().get(i));
-                Capacity += getWeight(_graph.GetVertices().get(i).parent, _graph.GetVertices().get(i));
+                capacity += getWeight(_graph.GetVertices().get(i).getParent(), _graph.GetVertices().get(i));
             }
         }
 
-        Gui.setlblCapTransferred(String.valueOf(Capacity));
-        if (Capacity <= _graph.GetVertices().get(e).getCapacity()) {
-            Gui.setlblCapTransferredColor(Color.red);
-        } else {
-            Gui.setlblCapTransferredColor(Color.blue);
-        }
+        //Gui.setlblCapTransferred(String.valueOf(capacity));
+//        if (capacity <= _graph.GetVertices().get(e).getCapacity()) {
+//            Gui.setlblCapTransferredColor(Color.red);
+//        } else {
+//            Gui.setlblCapTransferredColor(Color.blue);
+//        }
         glowMap.clear();
-        glowMap = (HashMap) setShortestPath.clone();
-        Gui.graph();
+        glowMap = (HashMap<Vertex, Vertex>) setShortestPath.clone();
     }
 
     public void reset() {
         for (Vertex v : _graph.GetVertices().values()) {
             v.setVisited(false);
         }
-        for (Edge e : edges) {
+        for (Edge e : _graph.GetEdges().values()) {
             e.setFailed(false);
         }
-        setShortestPath.clear();
-        glowMap.clear();
     }
 
     public boolean isConnected() {
@@ -583,11 +596,11 @@ public class GraphAlgos {
         return true;
     }
 
-    public int hasPath(int v) {
-        return visited.get(v);
-    }
-
-    public int distTo(int v) {
-        return distTo.get(v);
-    }
+//    public int hasPath(int v) {
+//        return visited.get(v);
+//    }
+//
+//    public int distTo(int v) {
+//        return distTo.get(v);
+//    }
 }

@@ -90,6 +90,6 @@ public class Edge{
 
     
     public String toString() {
-        return getId() + " " + _source.getName() + " " + _dest.getName() + " " + getWeight() + " " + isFailed();
+        return getId() + " " + _source.GetName() + " " + _dest.GetName() + " " + getWeight() + " " + isFailed();
     }
 }
