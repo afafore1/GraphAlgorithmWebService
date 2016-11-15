@@ -10,7 +10,8 @@ All you need is access to the Graph/IGraph and GraphAlgos class.
 The **Graph class** can be used to retrieve all vertices and edges.   
 The graphAlgo class can be used to add vertices, edges e.t.c  
 Sample  
-``` IGraph graph = new Graph();
+``` 
+IGraph graph = new Graph();
     GraphAlgos graphAlgo = new GraphAlgos(graph);
     graphAlgo.Dfs(Vertex source); // takes in source object (Vertex)
     graphAlgo.Bfs(Vertex source); // takes in source object (Vertex)
