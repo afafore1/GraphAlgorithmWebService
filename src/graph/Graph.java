@@ -25,6 +25,17 @@ public class Graph implements IGraph {
     	_vertices.put(id, v);
     }
     
+    public void AddVertex(int id)
+    {
+    	Vertex v = new Vertex(id);
+    	_vertices.put(id, v);
+    }
+    
+    public void AddVertex(int id, String label)
+    {
+    	Vertex v = new Vertex(id, label);
+    	_vertices.put(id, v);
+    }
     /* (non-Javadoc)
 	 * @see graph.IGraph#RemoveVertex(int)
 	 */
@@ -54,6 +65,22 @@ public class Graph implements IGraph {
     	{
     		source.eList().add(edge);
     	}
+    }
+    
+    public void AddEdge(int id, Vertex source, Vertex dest, int weight)
+    {
+    	Edge edge = new Edge(id, source, dest, weight);
+    	_edges.put(id, edge);
+    	source.eList().add(edge);
+    	dest.eList().add(edge);
+    }
+    
+    public void AddEdge(int id, Vertex source, Vertex dest)
+    {
+    	Edge edge = new Edge(id, source, dest);
+    	_edges.put(id, edge);
+    	source.eList().add(edge);
+    	dest.eList().add(edge);
     }
     
     /* (non-Javadoc)

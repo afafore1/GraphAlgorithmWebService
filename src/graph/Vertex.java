@@ -28,6 +28,16 @@ public class Vertex {
         _location = loc;
     }
 
+    protected Vertex(int id)
+    {
+    	_id = id;
+    }
+    
+    protected Vertex(int id, String vertexLabel)
+    {
+    	_id = id;
+    	_label = vertexLabel;
+    }
     
 	public int getX(){
         return _location.x;

@@ -23,6 +23,20 @@ public class Edge{
     	_fail = fail;
     }
 
+    protected Edge(int id, Vertex source, Vertex dest, int weight)
+    {
+    	_id = id;
+    	_source = source;
+    	_dest = dest;
+    	_weight = weight;
+    }
+    
+    protected Edge(int id, Vertex source, Vertex dest)
+    {
+    	_id = id;
+    	_source = source;
+    	_dest = dest;
+    }
     
     public boolean getBidirectional() {
         return _bidirectional;

@@ -35,6 +35,8 @@ public class GraphAlgos {
 		_graph = graph;
 		_cutV = new ArrayList<>();
 		_failed = new ArrayList<>();
+		_glowMap = new HashMap<>();
+		_dist = new HashMap<>();
 	}
     /**
      *
