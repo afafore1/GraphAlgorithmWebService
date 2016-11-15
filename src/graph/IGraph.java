@@ -9,7 +9,7 @@ public interface IGraph {
 
 	void RemoveVertex(int id);
 
-	void AddEdge(int id, Vertex source, Vertex destination, int weight, boolean fail);
+	void AddEdge(int id, Vertex source, Vertex destination, int weight, boolean fail, boolean isDirectional);
 
 	void RemoveEdge(int id);
 

@@ -25,8 +25,9 @@ public class GraphAlgos {
 	private ArrayList<Integer> _cutV;
 	private ArrayList<Vertex> _failed;
 	private HashMap<Vertex, Integer> _dist; 
-	private int _source = -1;
-    private int _dest = -1;
+//	private int source = -1; // these should be passed in
+//    private int _dest = -1;
+    private HashMap<Vertex, Vertex> _glowMap;
 	
 	
 	public GraphAlgos(IGraph graph)
@@ -44,7 +45,7 @@ public class GraphAlgos {
      * @param parent
      * @param ap
      */
-    public void APF(int u, HashMap<Integer, Integer> visited, HashMap<Integer, Integer> disc, HashMap<Integer, Integer> low, HashMap<Integer, Integer> parent, HashMap<Integer, Integer> ap) {
+    public void APF(int u, int source, HashMap<Integer, Integer> visited, HashMap<Integer, Integer> disc, HashMap<Integer, Integer> low, HashMap<Integer, Integer> parent, HashMap<Integer, Integer> ap) {
     	int time = 0;
         int children = 0;
         visited.put(u, 0);
@@ -58,15 +59,15 @@ public class GraphAlgos {
             if (visited.get(v) == -1) {
                 children++;
                 parent.put(v, u);
-                APF(v, visited, disc, low, parent, ap); // recursive for it
+                APF(v, source, visited, disc, low, parent, ap); // recursive for it
                 int val = Math.min(low.get(u), low.get(v));
                 low.put(u, val);
 
-                if (u == _source && children > 1) {
+                if (u == source && children > 1) {
                     ap.put(u, 1);
                 }
                 // if u is not root and low value of one of its child is more than discovery value of u
-                if (u != _source && low.get(v) >= disc.get(u)) { // need a check for this if statement.. always marks beginning as a cut even when it's not
+                if (u != source && low.get(v) >= disc.get(u)) { // need a check for this if statement.. always marks beginning as a cut even when it's not
                     ap.put(u, 1);
                 }
             } else if (v != parent.get(u)) {
@@ -76,7 +77,7 @@ public class GraphAlgos {
         }
     }
 
-    public String AP() {
+    public String AP(int source) {
         HashMap<Integer, Integer> visited = new HashMap<>();
         boolean cutExist = false;
         HashMap<Integer, Integer> disc = new HashMap<>();
@@ -96,7 +97,7 @@ public class GraphAlgos {
         while (allNodes.hasNext()) {
             int key = allNodes.next();
             if (visited.get(key) == -1) {
-                APF(key, visited, disc, low, parent, ap);
+                APF(key, source, visited, disc, low, parent, ap);
             }
         }
 
@@ -238,13 +239,13 @@ public class GraphAlgos {
     
     public String printSolution(Stack<Vertex> stack){
     	StringBuilder sb = new StringBuilder();
-    	HashMap<Vertex, Vertex> glowMap = new HashMap<>();
+    	_glowMap = new HashMap<>();
         Vertex last = stack.peek();
         int finalDistanceValue = 0;
         while(!stack.isEmpty()){
             Vertex current = stack.pop();
             Vertex next = stack.isEmpty() ? last : stack.peek();
-            glowMap.put(current, next);
+            _glowMap.put(current, next);
             finalDistanceValue += GetEdgeWeight(current, next);
             sb.append("Vertex "+ current.GetName()+" -> ");
         }
@@ -346,7 +347,7 @@ public class GraphAlgos {
     public void disJointshortestPath(int v, int e) {
     	HashMap<Integer, HashMap<Vertex, Vertex>> disjointPaths = new HashMap<>();
     	HashMap<Vertex, Vertex> tempShortPath = new HashMap<>();
-    	HashMap<Vertex, Vertex> glowMap = new HashMap<>();
+    	_glowMap = new HashMap<>();
     	int pathvalue = 0;
         while (pathExist(_graph.GetVertices().get(v), _graph.GetVertices().get(e)) == true) {
             System.out.println("Running ..");
@@ -364,7 +365,7 @@ public class GraphAlgos {
                     tempShortPath.put(_graph.GetVertices().get(i).getParent(), _graph.GetVertices().get(i));
                 }
             }
-            glowMap = (HashMap<Vertex, Vertex>) tempShortPath.clone();
+            _glowMap = (HashMap<Vertex, Vertex>) tempShortPath.clone();
             //Gui.graph();
             disjointPaths.put(pathvalue, tempShortPath);
             pathvalue++;
@@ -548,7 +549,7 @@ public class GraphAlgos {
     public void shortestPath(int v, int e) {
     	StringBuilder sb = new StringBuilder();
     	HashMap<Vertex, Vertex> setShortestPath = new HashMap<>();
-    	HashMap<Vertex, Vertex> glowMap = new HashMap<>();
+    	_glowMap = new HashMap<>();
         int capacity = 0;
         if (e == v) {
             sb.append(v + "-->" + v);
@@ -570,10 +571,71 @@ public class GraphAlgos {
 //        } else {
 //            Gui.setlblCapTransferredColor(Color.blue);
 //        }
-        glowMap.clear();
-        glowMap = (HashMap<Vertex, Vertex>) setShortestPath.clone();
+        _glowMap.clear();
+        _glowMap = (HashMap<Vertex, Vertex>) setShortestPath.clone();
     }
 
+    public HashMap<Vertex, Vertex> GetGlowMap()
+    {
+    	return _glowMap;
+    }
+    
+    public ArrayList<Vertex> GetFailedVertices()
+    {
+    	return _failed;
+    }
+    
+    public ArrayList<Integer> GetCutVertices()
+    {
+    	return _cutV;
+    }
+    
+    public HashMap<Vertex, Integer> GetDist()
+    {
+    	return _dist;
+    }
+    
+    public void FailVertex(int nodeKey)
+    {
+    	Vertex fail = _graph.GetVertices().get(nodeKey);
+        if (_failed.contains(fail)) {
+        	_failed.remove(fail);
+        } else {
+        	_failed.add(fail);
+        }
+        Iterator<Edge> e = fail.eList().iterator();
+        while (e.hasNext()) {
+            Edge next = e.next();
+            next.setFailed(!next.isFailed()); //_set it to opposite of what it is
+        }
+    }
+    
+    public void AutoFailVertices(int source, int dest)
+    {
+    	if (source > -1 && dest > -1) {
+            if (0.2 >= Math.random()) { // make probability of a node failure low
+                int vertexSize = _graph.GetVertices().size();
+                Vertex v = null;
+                int rand = 0;
+                while (v == null) {
+                    rand = (int) (Math.random() * vertexSize);
+                    v = _graph.GetVertices().get(rand);
+                }
+                if (!(rand == source || rand == dest)) { // do not fail source or destination
+                    if (GetFailedVertices().contains(v)) {
+                        GetFailedVertices().remove(v);
+                    } else {
+                        GetFailedVertices().add(v);
+                    }
+
+                    _glowMap.clear();
+                    execute(_graph.GetVertices().get(source));
+                    shortestPath(source, dest);
+                }
+            }
+        }
+    }
+    
     public void reset() {
         for (Vertex v : _graph.GetVertices().values()) {
             v.setVisited(false);
@@ -583,8 +645,8 @@ public class GraphAlgos {
         }
     }
 
-    public boolean isConnected() {
-        Vertex s = _graph.GetVertices().get(_source);
+    public boolean isConnected(int source) {
+        Vertex s = _graph.GetVertices().get(source);
         Bfs(s);
         Iterator<Vertex> vert = _graph.GetVertices().values().iterator();
         while (vert.hasNext()) {

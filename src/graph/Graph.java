@@ -41,10 +41,19 @@ public class Graph implements IGraph {
 	 * @see graph.IGraph#AddEdge(int, graph.Vertex, graph.Vertex, int, boolean)
 	 */
     @Override
-	public void AddEdge(int id, Vertex source, Vertex destination, int weight, boolean fail)
+	public void AddEdge(int id, Vertex source, Vertex destination, int weight, boolean fail, boolean isDirectional)
     {
     	Edge edge = new Edge(id, source, destination, weight, fail);
     	_edges.put(id, edge);
+    	if(isDirectional)
+    	{
+    		edge.setBidirectional(true);
+    		source.eList().add(edge);
+    		destination.eList().add(edge);
+    	}else
+    	{
+    		source.eList().add(edge);
+    	}
     }
     
     /* (non-Javadoc)
