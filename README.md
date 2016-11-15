@@ -18,3 +18,4 @@ Sample
     graphAlgo.execute(Vertex source); // Dijkstra's algorithm
     graphAlgo.shortestPath(int source, int destination); // takes in source and destination id. Always call to get path after algorithm
 ```
+#Download graphAlgo.jar file to use
